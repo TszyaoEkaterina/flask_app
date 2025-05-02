@@ -18,7 +18,25 @@ const FitnessClassManagement = () => {
         room_id: "",
         restrictions: "",
     });
+
+    const [showModal, setShowModal] = useState(false);
+    const [selectedClass, setSelectedClass] = useState(null);
+    const [searchInput, setSearchInput] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
+    const [registeredMembers, setRegisteredMembers] = useState(new Set()); // store mem_id strings
+    const [noMatch, setNoMatch] = useState(false);
     const navigate = useNavigate();
+
+    const openRegisterModal = (fitClass) => {
+        setSelectedClass(fitClass);
+        setShowModal(true);
+    };
+      
+    const closeModal = () => {
+        setShowModal(false);
+        setSearchInput('');
+        setSearchResults([]);
+    };
 
     useEffect(() => {
         fetchTrainers();
@@ -116,6 +134,54 @@ const FitnessClassManagement = () => {
         }
     };
 
+    const handleSearch = async () => {
+        if (searchInput.length == 0) {
+            return;
+        }
+        setNoMatch(false);
+        const queryParams = new URLSearchParams({
+            name: searchInput || "",
+            class: selectedClass.class_id
+        }).toString();
+    
+        const res = await fetch(`http://localhost:5000/api/search-members?${queryParams}`, {
+            method: "GET",
+        });
+    
+        const data = await res.json();
+        setSearchResults(data);
+        setNoMatch(data.length == 0);
+    };
+
+    const handleToggleRegistration = async (member) => {
+        const mem_id = member.mem_id;
+        const class_id = selectedClass.class_id;
+        if (member.registered) {
+            console.log("deregister user");
+            const res = await fetch("http://localhost:5000/api/deregister", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ mem_id, class_id })
+            });
+            const data = await res.json();
+        } else {
+            console.log("register user");
+            const res = await fetch("http://localhost:5000/api/register", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ mem_id, class_id })
+            });
+            const data = await res.json();
+        }
+        handleSearch();
+        fetchClasses(); // Reload
+        return;
+    };
+
     return (
         <div className="content">
             <h1 className="heading-title">Fitness Class Management</h1>
@@ -151,6 +217,7 @@ const FitnessClassManagement = () => {
                             <p>Restrictions: {fitClass.restrictions || "N/A"}</p>
                         </div>
                         <div>
+                            <button onClick={() => openRegisterModal(fitClass)} className="btn register-btn">Register</button>
                             <button onClick={() => handleEditClick(fitClass)} className="btn edit-btn">Edit</button>
                             <button onClick={() => handleDelete(fitClass.class_id)} className="btn delete-btn">Delete</button>
                         </div>
@@ -181,6 +248,42 @@ const FitnessClassManagement = () => {
                     <button onClick={() => setEditingClass(null)} className="btn cancel-btn">Cancel</button>
                 </div>
             )}
+            {showModal && (
+                <div className="register-modal">
+                    <div className="modal-content">
+                    <h2>Search Member</h2>
+                    <input
+                        className="search-input"
+                        type="text"
+                        placeholder="Enter member name"
+                        value={searchInput}
+                        onChange={e => setSearchInput(e.target.value)}
+                    />
+                    <button className="btn search-btn" onClick={handleSearch}>Search</button>
+
+                    <ul className="member-list">
+                    {noMatch ? (
+                        <li className="member-item">No matching results</li>
+                    ) : (
+                        searchResults.map(member => (
+                        <li key={member.mem_id} className="member-item">
+                            {member.name} ({member.email})
+                            <button
+                            onClick={() => handleToggleRegistration(member)}
+                            className={`btn ${member.registered ? 'grey-btn' : 'register-btn'}`}
+                            >
+                            {member.registered ? 'Deregister' : 'Register'}
+                            </button>
+                        </li>
+                        ))
+                    )}
+                    </ul>
+
+                    <button onClick={closeModal} className="btn close-btn">Close</button>
+                </div>
+            </div>
+            )}
+
         </div>
     );
 };

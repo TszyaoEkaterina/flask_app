@@ -232,6 +232,64 @@ def get_rooms():
         cursor.close()
         connection.close()
 
+@app.route('/api/search-members')
+def search_members():
+    name_query = request.args.get('name', '').strip()
+    class_id = request.args.get('class', type=int)
+    if not name_query or class_id is None:
+        return jsonify([])
+
+    matching_members = Member.query.filter(Member.name.like(f"{name_query.capitalize()}%")).all()
+    registered_ids = set(
+        row.mem_id for row in
+        db.session.query(ClassParticipant.mem_id)
+        .filter_by(class_id=class_id)
+        .all()
+    )
+
+    return jsonify([
+        {
+            "mem_id": m.mem_id,
+            "name": m.name,
+            "email": m.email,
+            "registered": m.mem_id in registered_ids
+        }
+        for m in matching_members
+    ])
+
+@app.route('/api/register', methods=['POST'])
+def register_member():
+    data = request.get_json()
+    class_id = data.get('class_id')
+    mem_id = data.get('mem_id')
+    if not class_id or not mem_id:
+        return jsonify({"error": "Missing class_id or mem_id"}), 400
+    # Extra check accounting for cuncurrency
+    existing = ClassParticipant.query.filter_by(class_id=class_id, mem_id=mem_id).first()
+    if existing:
+        return jsonify({"error": "already registered"}), 500
+    
+    new_entry = ClassParticipant(class_id=class_id, mem_id=mem_id)
+    db.session.add(new_entry)
+    db.session.commit()
+    return jsonify({"status": "registered"})
+
+@app.route('/api/deregister', methods=['POST'])
+def deregister_member():
+    data = request.get_json()
+    class_id = data.get('class_id')
+    mem_id = data.get('mem_id')
+    if not class_id or not mem_id:
+        return jsonify({"error": "Missing class_id or mem_id"}), 400
+    # Perform extra checking to account for concurrency
+    participant = ClassParticipant.query.filter_by(class_id=class_id, mem_id=mem_id).first()
+    if not participant:
+        return jsonify({"error": "not registered"}), 500
+
+    db.session.delete(participant)
+    db.session.commit()
+    return jsonify({"status": "deregistered"})
+
 with app.app_context():
     db.create_all()
 
