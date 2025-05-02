@@ -1,0 +1,47 @@
+# === Root-level ignores ===
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.bak
+
+# === IDEs ===
+.vscode/
+.idea/
+*.swp
+
+# === Python (Flask) - server/ ===
+flask-server/__pycache__/
+flask-server/*.py[cod]
+flask-server/*.pyo
+flask-server/*.pyd
+flask-server/*.so
+flask-server/.env
+flask-server/.env.*
+flask-server/instance/
+flask-server/*.db
+flask-server/*.sqlite3
+flask-server/venv/
+flask-server/*.egg-info/
+flask-server/pip-log.txt
+flask-server/htmlcov/
+flask-server/.pytest_cache/
+flask-server/.coverage
+flask-server/coverage/
+
+# === Node.js (React) - client/ ===
+client/node_modules/
+client/build/
+client/dist/
+client/.cache/
+client/.eslintcache
+client/npm-debug.log*
+client/yarn-debug.log*
+client/yarn-error.log*
+
+# React environment files
+client/.env
+client/.env.local
+client/.env.development.local
+client/.env.test.local
+client/.env.production.local
