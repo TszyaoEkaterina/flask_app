@@ -51,11 +51,6 @@ class ClassParticipant(db.Model):
     class_id = db.Column(db.Integer, db.ForeignKey('Classes.class_id'), primary_key=True)
     mem_id = db.Column(db.Integer, db.ForeignKey('Members.mem_id'), primary_key=True)
 
-# # Test Route to Check Database
-# @app.route('/api/hello', methods=['GET'])
-# def hello():
-#     return jsonify({"message": ["Hello World!", "Hello from flask!"]})
-
 # Classes operations
 @app.route('/api/classes', methods=['POST'])
 def add_class():
@@ -232,6 +227,7 @@ def get_rooms():
         cursor.close()
         connection.close()
 
+# Search bar functionality
 @app.route('/api/search-members')
 def search_members():
     name_query = request.args.get('name', '').strip()
@@ -257,6 +253,7 @@ def search_members():
         for m in matching_members
     ])
 
+# Restering member
 @app.route('/api/register', methods=['POST'])
 def register_member():
     data = request.get_json()
@@ -274,6 +271,7 @@ def register_member():
     db.session.commit()
     return jsonify({"status": "registered"})
 
+# Deregistering member
 @app.route('/api/deregister', methods=['POST'])
 def deregister_member():
     data = request.get_json()
